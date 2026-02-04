@@ -1,8 +1,6 @@
 import copy
 import random
 from datetime import datetime
-import calendar
-
 
 def generate_copies(
     base_json,
@@ -13,40 +11,32 @@ def generate_copies(
 ):
     results = []
 
-    month_map = {
-        "Janeiro": 1,
-        "Fevereiro": 2,
-        "Março": 3,
-        "Abril": 4,
-        "Maio": 5,
-        "Junho": 6,
-        "Julho": 7,
-        "Agosto": 8,
-        "Setembro": 9,
-        "Outubro": 10,
-        "Novembro": 11,
-        "Dezembro": 12,
-    }
-
-    year = datetime.now().year
-    month_number = month_map[month]
-    last_day = calendar.monthrange(year, month_number)[1]
-
-    for _ in range(quantity):
+    for i in range(quantity):
         new_json = copy.deepcopy(base_json)
 
-        # -------- CREATE AT --------
-        day = random.randint(1, last_day)
-        created_at = datetime(year, month_number, day, 12, 0, 0)
-        new_json["createAt"] = created_at.isoformat()
+        # TotalValue
+        if value_range == "50 a 100":
+            total_value = round(random.uniform(50, 100), 2)
+        elif value_range == "100 a 150":
+            total_value = round(random.uniform(100, 150), 2)
+        else:
+            total_value = round(random.uniform(150, 300), 2)
 
-        # -------- TOTAL VALUE --------
-        min_val, max_val = value_range
-        new_json["totalValue"] = round(random.uniform(min_val, max_val), 2)
+        new_json["FinancialInfos"]["TotalValue"]["$numberDecimal"] = str(total_value)
 
-        # -------- SELLER UUID --------
+        # MDRPercent aleatório
+        new_json["FinancialInfos"]["MDRPercent"]["$numberDecimal"] = str(
+            round(random.uniform(1, 10), 2)
+        )
+
+        # CreatedAt (Janeiro)
+        day = random.randint(1, 28)
+        created_at = datetime(2026, 1, day, 12, 0, 0).isoformat() + "Z"
+        new_json["CreatedAt"]["$date"] = created_at
+
+        # Seller UUID (opcional)
         if seller_uuid_override:
-            new_json["seller_uuid"] = seller_uuid_override
+            new_json["SellerUuid"] = seller_uuid_override
 
         results.append(new_json)
 

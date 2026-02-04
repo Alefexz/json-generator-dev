@@ -1,109 +1,62 @@
-import streamlit as st
 import json
-from core.generator import generate_copies
-from datetime import datetime
+import streamlit as st
 from pathlib import Path
+from core.generator import generate_copies
 
-# ---------------- CONFIG DA PÁGINA ----------------
-st.set_page_config(
-    page_title="JSON Generator Pro",
-    page_icon="🧾",
-    layout="centered"
+st.set_page_config(page_title="JSON Generator", layout="centered")
+
+# Logo (como estava antes)
+st.image("assets/Bemol_logo.png", width=160)
+
+st.title("Gerador de JSON")
+
+st.markdown("Cole o JSON base abaixo, escolha as opções e gere cópias automaticamente.")
+
+# JSON base
+base_json_text = st.text_area("JSON base", height=300)
+
+# Quantidade
+quantity = st.number_input("Quantidade de cópias", min_value=1, max_value=100, value=10)
+
+# Mês de criação
+month = st.selectbox(
+    "Mês do CreatedAt",
+    ["Janeiro"]
 )
 
-# ---------------- LOGO (SAFE LOAD) ----------------
-logo_path = Path("assets/Bemol_logo.png")
-
-if logo_path.exists():
-    st.image(str(logo_path), width=160)
-
-st.title("JSON Generator Pro")
-st.caption("Gerador inteligente de JSON para testes e simulações")
-
-st.divider()
-
-# ---------------- UPLOAD JSON ----------------
-uploaded_file = st.file_uploader(
-    "Upload do JSON base",
-    type=["json"]
+# Faixa de valor
+value_range = st.selectbox(
+    "Faixa do TotalValue",
+    ["50 a 100", "100 a 150", "150 a 300"]
 )
 
-if uploaded_file:
+# 👉 NOVO: seller_uuid
+st.subheader("Seller UUID")
+
+manter_seller = st.checkbox(
+    "Manter seller_uuid original",
+    value=True
+)
+
+novo_seller_uuid = None
+if not manter_seller:
+    novo_seller_uuid = st.text_input("Novo seller_uuid")
+
+# Botão
+if st.button("Gerar JSONs"):
     try:
-        base_json = json.load(uploaded_file)
-        st.success("JSON carregado com sucesso ✅")
-    except Exception:
-        st.error("Erro ao ler o JSON")
-        st.stop()
+        base_json = json.loads(base_json_text)
 
-    st.divider()
-
-    # ---------------- CONFIGURAÇÕES ----------------
-    st.subheader("Configurações de geração")
-
-    quantity = st.number_input(
-        "Quantidade de cópias",
-        min_value=1,
-        max_value=1000,
-        value=10
-    )
-
-    selected_month = st.selectbox(
-        "Mês para gerar o createAt",
-        [
-            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-        ]
-    )
-
-    value_range = st.selectbox(
-        "Faixa de Total Value",
-        [
-            (50, 100),
-            (100, 150),
-            (150, 200),
-            (200, 300)
-        ],
-        format_func=lambda x: f"R$ {x[0]} - R$ {x[1]}"
-    )
-
-    st.divider()
-
-    # ---------------- SELLER UUID ----------------
-    st.subheader("Seller UUID")
-
-    manter_seller = st.checkbox(
-        "Manter seller_uuid original do JSON",
-        value=True
-    )
-
-    novo_seller_uuid = None
-
-    if not manter_seller:
-        novo_seller_uuid = st.text_input(
-            "Novo seller_uuid",
-            placeholder="Ex: 8f3a2c1d-1234-5678-9abc-abcdef123456"
-        )
-
-    st.divider()
-
-    # ---------------- GERAR ----------------
-    if st.button("🚀 Gerar JSONs"):
         result = generate_copies(
             base_json=base_json,
             quantity=quantity,
-            month=selected_month,
+            month=month,
             value_range=value_range,
             seller_uuid_override=novo_seller_uuid
         )
 
-        output = json.dumps(result, indent=2, ensure_ascii=False)
+        st.success("JSONs gerados com sucesso!")
+        st.code(json.dumps(result, indent=2, ensure_ascii=False))
 
-        st.success("JSONs gerados com sucesso 🎉")
-
-        st.download_button(
-            label="📥 Baixar JSON",
-            data=output,
-            file_name="jsons_gerados.json",
-            mime="application/json"
-        )
+    except Exception as e:
+        st.error(f"Erro: {e}")
