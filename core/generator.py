@@ -63,12 +63,6 @@ def generate_copies(base_json: dict, quantity: int, options: dict):
                 options["month"]
             )
 
-        # SellerUuid (FIX DEFINITIVO)
-        if options.get("change_seller"):
-            seller_value = options.get("seller_uuid")
-            if seller_value:
-                data["SellerUuid"] = seller_value
-
         results.append(data)
 
     return results

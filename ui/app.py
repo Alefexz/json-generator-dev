@@ -119,20 +119,6 @@ with c3:
     change_created_at = st.checkbox("CreatedAt", True)
 
 # -------------------------------------------------
-# SellerUuid (CORRIGIDO)
-# -------------------------------------------------
-st.subheader("🏪 Seller")
-
-change_seller = st.checkbox("Alterar SellerUuid")
-
-seller_uuid_value = None
-if change_seller:
-    seller_uuid_value = st.text_input(
-        "Novo SellerUuid",
-        placeholder="Cole aqui o SellerUuid desejado"
-    )
-
-# -------------------------------------------------
 # Geração dos JSONs
 # -------------------------------------------------
 if st.button("🚀 Gerar JSONs"):
@@ -166,9 +152,7 @@ if st.button("🚀 Gerar JSONs"):
                 "total_value_range": (min_val, max_val),
                 "created_at": change_created_at,
                 "month": month_map[month_name],
-                "year": 2026,
-                "change_seller": change_seller,
-                "seller_uuid": seller_uuid_value
+                "year": 2026
             }
 
             results = generate_copies(
