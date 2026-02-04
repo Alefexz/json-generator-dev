@@ -11,7 +11,6 @@ sys.path.insert(0, ROOT_DIR)
 
 from core.generator import generate_copies
 
-
 # -------------------------------------------------
 # Configuração da página
 # -------------------------------------------------
@@ -120,17 +119,17 @@ with c3:
     change_created_at = st.checkbox("CreatedAt", True)
 
 # -------------------------------------------------
-# 👉 NOVO: SellerUuid
+# SellerUuid (CORRIGIDO)
 # -------------------------------------------------
 st.subheader("🏪 Seller")
 
-change_seller = st.checkbox("Alterar SellerUuid", False)
+change_seller = st.checkbox("Alterar SellerUuid")
 
 seller_uuid_value = None
 if change_seller:
     seller_uuid_value = st.text_input(
         "Novo SellerUuid",
-        placeholder="Ex: 8563bf7a-3bb8-4568-93e1-0e584d99425b"
+        placeholder="Cole aqui o SellerUuid desejado"
     )
 
 # -------------------------------------------------
@@ -168,8 +167,8 @@ if st.button("🚀 Gerar JSONs"):
                 "created_at": change_created_at,
                 "month": month_map[month_name],
                 "year": 2026,
-                "seller": change_seller,
-                "seller_value": seller_uuid_value
+                "change_seller": change_seller,
+                "seller_uuid": seller_uuid_value
             }
 
             results = generate_copies(

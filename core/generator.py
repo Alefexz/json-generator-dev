@@ -39,7 +39,7 @@ def generate_copies(base_json: dict, quantity: int, options: dict):
         if options.get("transaction"):
             data["TransactionId"] = str(uuid.uuid4())
 
-        # ContractNumber (mantém CDP)
+        # ContractNumber
         if options.get("contract"):
             data["ContractNumber"] = f"CDP{random.randint(1000000000, 9999999999)}"
 
@@ -58,13 +58,16 @@ def generate_copies(base_json: dict, quantity: int, options: dict):
 
         # CreatedAt
         if options.get("created_at"):
-            year = options["year"]
-            month = options["month"]
-            data["CreatedAt"]["$date"] = random_date_in_month(year, month)
+            data["CreatedAt"]["$date"] = random_date_in_month(
+                options["year"],
+                options["month"]
+            )
 
-        # 👉 SellerUuid (novo, opcional)
-        if options.get("seller") and options.get("seller_value"):
-            data["SellerUuid"] = options["seller_value"]
+        # SellerUuid (FIX DEFINITIVO)
+        if options.get("change_seller"):
+            seller_value = options.get("seller_uuid")
+            if seller_value:
+                data["SellerUuid"] = seller_value
 
         results.append(data)
 
