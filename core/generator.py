@@ -1,43 +1,71 @@
 import copy
+import uuid
 import random
 from datetime import datetime
 
-def generate_copies(
-    base_json,
-    quantity,
-    month,
-    value_range,
-    seller_uuid_override=None
-):
+
+def random_decimal(min_val: float, max_val: float) -> str:
+    value = random.uniform(min_val, max_val)
+    return f"{value:.2f}"
+
+
+def random_date_in_month(year: int, month: int) -> str:
+    day = random.randint(1, 28)
+    base_time = datetime.utcnow().time()
+
+    dt = datetime(
+        year=year,
+        month=month,
+        day=day,
+        hour=base_time.hour,
+        minute=base_time.minute,
+        second=base_time.second
+    )
+
+    return dt.isoformat() + "Z"
+
+
+def generate_copies(base_json: dict, quantity: int, options: dict):
     results = []
 
-    for i in range(quantity):
-        new_json = copy.deepcopy(base_json)
+    for _ in range(quantity):
+        data = copy.deepcopy(base_json)
+
+        # _id.$oid
+        if options.get("oid"):
+            data["_id"]["$oid"] = uuid.uuid4().hex[:24]
+
+        # TransactionId
+        if options.get("transaction"):
+            data["TransactionId"] = str(uuid.uuid4())
+
+        # ContractNumber (mantém CDP)
+        if options.get("contract"):
+            data["ContractNumber"] = f"CDP{random.randint(1000000000, 9999999999)}"
 
         # TotalValue
-        if value_range == "50 a 100":
-            total_value = round(random.uniform(50, 100), 2)
-        elif value_range == "100 a 150":
-            total_value = round(random.uniform(100, 150), 2)
-        else:
-            total_value = round(random.uniform(150, 300), 2)
+        if options.get("total_value"):
+            min_v, max_v = options["total_value_range"]
+            data["FinancialInfos"]["TotalValue"]["$numberDecimal"] = random_decimal(
+                min_v, max_v
+            )
 
-        new_json["FinancialInfos"]["TotalValue"]["$numberDecimal"] = str(total_value)
+        # MDRPercent
+        if options.get("mdr"):
+            data["FinancialInfos"]["MDRPercent"]["$numberDecimal"] = str(
+                random.randint(1, 10)
+            )
 
-        # MDRPercent aleatório
-        new_json["FinancialInfos"]["MDRPercent"]["$numberDecimal"] = str(
-            round(random.uniform(1, 10), 2)
-        )
+        # CreatedAt
+        if options.get("created_at"):
+            year = options["year"]
+            month = options["month"]
+            data["CreatedAt"]["$date"] = random_date_in_month(year, month)
 
-        # CreatedAt (Janeiro)
-        day = random.randint(1, 28)
-        created_at = datetime(2026, 1, day, 12, 0, 0).isoformat() + "Z"
-        new_json["CreatedAt"]["$date"] = created_at
+        # 👉 SellerUuid (novo, opcional)
+        if options.get("seller") and options.get("seller_value"):
+            data["SellerUuid"] = options["seller_value"]
 
-        # Seller UUID (opcional)
-        if seller_uuid_override:
-            new_json["SellerUuid"] = seller_uuid_override
-
-        results.append(new_json)
+        results.append(data)
 
     return results
