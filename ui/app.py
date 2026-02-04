@@ -2,6 +2,7 @@ import streamlit as st
 import json
 from core.generator import generate_copies
 from datetime import datetime
+from pathlib import Path
 
 # ---------------- CONFIG DA PÁGINA ----------------
 st.set_page_config(
@@ -10,8 +11,12 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- HEADER COM LOGO ----------------
-st.image("assets/logo.png", width=160)
+# ---------------- LOGO (SAFE LOAD) ----------------
+logo_path = Path("assets/Bemol_logo.png")
+
+if logo_path.exists():
+    st.image(str(logo_path), width=160)
+
 st.title("JSON Generator Pro")
 st.caption("Gerador inteligente de JSON para testes e simulações")
 
@@ -27,7 +32,7 @@ if uploaded_file:
     try:
         base_json = json.load(uploaded_file)
         st.success("JSON carregado com sucesso ✅")
-    except Exception as e:
+    except Exception:
         st.error("Erro ao ler o JSON")
         st.stop()
 
@@ -43,7 +48,6 @@ if uploaded_file:
         value=10
     )
 
-    # Escolha do mês
     selected_month = st.selectbox(
         "Mês para gerar o createAt",
         [
@@ -52,7 +56,6 @@ if uploaded_file:
         ]
     )
 
-    # Range de valores
     value_range = st.selectbox(
         "Faixa de Total Value",
         [
