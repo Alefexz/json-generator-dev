@@ -1,177 +1,106 @@
-import sys
-import os
-import json
 import streamlit as st
-
-# -------------------------------------------------
-# Garante que a pasta raiz esteja no PYTHONPATH
-# -------------------------------------------------
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, ROOT_DIR)
-
+import json
 from core.generator import generate_copies
+from datetime import datetime
 
-
-# -------------------------------------------------
-# Configuração da página
-# -------------------------------------------------
+# ---------------- CONFIG DA PÁGINA ----------------
 st.set_page_config(
-    page_title="Bemol | Gerador de JSON DEV",
-    page_icon="🧩",
-    layout="wide"
+    page_title="JSON Generator Pro",
+    page_icon="🧾",
+    layout="centered"
 )
 
-# -------------------------------------------------
-# Header com logo e título
-# -------------------------------------------------
-col_logo, col_title = st.columns([1, 6])
-
-with col_logo:
-    st.image("assets/Bemol_logo.png", width=160)
-
-with col_title:
-    st.markdown(
-        """
-        <h2 style="margin-bottom:0;">Gerador de JSON para Testes (DEV)</h2>
-        <p style="color:gray; margin-top:4px;">
-            Ferramenta interna para geração de arquivos .JSON fictícios para testes.
-        </p>
-        """,
-        unsafe_allow_html=True
-    )
+# ---------------- HEADER COM LOGO ----------------
+st.image("assets/logo.png", width=160)
+st.title("JSON Generator Pro")
+st.caption("Gerador inteligente de JSON para testes e simulações")
 
 st.divider()
 
-# -------------------------------------------------
-# Entrada do JSON base
-# -------------------------------------------------
-json_text = st.text_area(
-    "📋 Cole o JSON base",
-    height=380,
-    placeholder="Cole aqui o JSON completo que servirá como base"
+# ---------------- UPLOAD JSON ----------------
+uploaded_file = st.file_uploader(
+    "Upload do JSON base",
+    type=["json"]
 )
 
-# -------------------------------------------------
-# Configurações principais
-# -------------------------------------------------
-st.subheader("⚙️ Configurações de Geração")
+if uploaded_file:
+    try:
+        base_json = json.load(uploaded_file)
+        st.success("JSON carregado com sucesso ✅")
+    except Exception as e:
+        st.error("Erro ao ler o JSON")
+        st.stop()
 
-col1, col2, col3 = st.columns(3)
+    st.divider()
 
-with col1:
-    qty = st.number_input(
+    # ---------------- CONFIGURAÇÕES ----------------
+    st.subheader("Configurações de geração")
+
+    quantity = st.number_input(
         "Quantidade de cópias",
         min_value=1,
-        max_value=100,
+        max_value=1000,
         value=10
     )
 
-with col2:
-    month_name = st.selectbox(
-        "Mês do CreatedAt",
+    # Escolha do mês
+    selected_month = st.selectbox(
+        "Mês para gerar o createAt",
         [
             "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
             "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
         ]
     )
 
-with col3:
+    # Range de valores
     value_range = st.selectbox(
-        "Faixa do TotalValue",
+        "Faixa de Total Value",
         [
-            "50 a 100",
-            "100 a 150",
-            "150 a 300",
-            "Valor livre"
-        ]
+            (50, 100),
+            (100, 150),
+            (150, 200),
+            (200, 300)
+        ],
+        format_func=lambda x: f"R$ {x[0]} - R$ {x[1]}"
     )
 
-# -------------------------------------------------
-# Faixa customizada
-# -------------------------------------------------
-if value_range == "Valor livre":
-    min_val = st.number_input("Valor mínimo", value=50.0)
-    max_val = st.number_input("Valor máximo", value=100.0)
-else:
-    ranges = {
-        "50 a 100": (50, 100),
-        "100 a 150": (100, 150),
-        "150 a 300": (150, 300)
-    }
-    min_val, max_val = ranges[value_range]
+    st.divider()
 
-# -------------------------------------------------
-# Campos a serem alterados
-# -------------------------------------------------
-st.subheader("🧩 Campos que serão alterados automaticamente")
+    # ---------------- SELLER UUID ----------------
+    st.subheader("Seller UUID")
 
-c1, c2, c3 = st.columns(3)
+    manter_seller = st.checkbox(
+        "Manter seller_uuid original do JSON",
+        value=True
+    )
 
-with c1:
-    change_oid = st.checkbox("_id.$oid", True)
-    change_transaction = st.checkbox("TransactionId", True)
+    novo_seller_uuid = None
 
-with c2:
-    change_contract = st.checkbox("ContractNumber", True)
-    change_mdr = st.checkbox("FinancialInfos.MDRPercent", True)
+    if not manter_seller:
+        novo_seller_uuid = st.text_input(
+            "Novo seller_uuid",
+            placeholder="Ex: 8f3a2c1d-1234-5678-9abc-abcdef123456"
+        )
 
-with c3:
-    change_total_value = st.checkbox("FinancialInfos.TotalValue", True)
-    change_created_at = st.checkbox("CreatedAt", True)
+    st.divider()
 
-# -------------------------------------------------
-# Geração dos JSONs
-# -------------------------------------------------
-if st.button("🚀 Gerar JSONs"):
-    if not json_text.strip():
-        st.error("❌ Cole um JSON válido antes de gerar.")
-    else:
-        try:
-            base_json = json.loads(json_text)
+    # ---------------- GERAR ----------------
+    if st.button("🚀 Gerar JSONs"):
+        result = generate_copies(
+            base_json=base_json,
+            quantity=quantity,
+            month=selected_month,
+            value_range=value_range,
+            seller_uuid_override=novo_seller_uuid
+        )
 
-            month_map = {
-                "Janeiro": 1,
-                "Fevereiro": 2,
-                "Março": 3,
-                "Abril": 4,
-                "Maio": 5,
-                "Junho": 6,
-                "Julho": 7,
-                "Agosto": 8,
-                "Setembro": 9,
-                "Outubro": 10,
-                "Novembro": 11,
-                "Dezembro": 12
-            }
+        output = json.dumps(result, indent=2, ensure_ascii=False)
 
-            options = {
-                "oid": change_oid,
-                "transaction": change_transaction,
-                "contract": change_contract,
-                "mdr": change_mdr,
-                "total_value": change_total_value,
-                "total_value_range": (min_val, max_val),
-                "created_at": change_created_at,
-                "month": month_map[month_name],
-                "year": 2026
-            }
+        st.success("JSONs gerados com sucesso 🎉")
 
-            results = generate_copies(
-                base_json=base_json,
-                quantity=qty,
-                options=options
-            )
-
-            st.success(f"✅ {qty} JSONs gerados com sucesso")
-
-            for i, item in enumerate(results, start=1):
-                st.subheader(f"📄 JSON #{i}")
-                st.code(
-                    json.dumps(item, indent=2, ensure_ascii=False),
-                    language="json"
-                )
-
-        except json.JSONDecodeError:
-            st.error("❌ O conteúdo colado não é um JSON válido.")
-        except Exception as e:
-            st.error(f"❌ Erro inesperado: {e}")
+        st.download_button(
+            label="📥 Baixar JSON",
+            data=output,
+            file_name="jsons_gerados.json",
+            mime="application/json"
+        )

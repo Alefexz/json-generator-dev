@@ -1,67 +1,53 @@
 import copy
-import uuid
 import random
 from datetime import datetime
+import calendar
 
 
-def random_decimal(min_val: float, max_val: float) -> str:
-    value = random.uniform(min_val, max_val)
-    return f"{value:.2f}"
-
-
-def random_date_in_month(year: int, month: int) -> str:
-    day = random.randint(1, 28)  # evita problema com meses menores
-    base_time = datetime.utcnow().time()
-
-    dt = datetime(
-        year=year,
-        month=month,
-        day=day,
-        hour=base_time.hour,
-        minute=base_time.minute,
-        second=base_time.second
-    )
-
-    return dt.isoformat() + "Z"
-
-
-def generate_copies(base_json: dict, quantity: int, options: dict):
+def generate_copies(
+    base_json,
+    quantity,
+    month,
+    value_range,
+    seller_uuid_override=None
+):
     results = []
 
+    month_map = {
+        "Janeiro": 1,
+        "Fevereiro": 2,
+        "Março": 3,
+        "Abril": 4,
+        "Maio": 5,
+        "Junho": 6,
+        "Julho": 7,
+        "Agosto": 8,
+        "Setembro": 9,
+        "Outubro": 10,
+        "Novembro": 11,
+        "Dezembro": 12,
+    }
+
+    year = datetime.now().year
+    month_number = month_map[month]
+    last_day = calendar.monthrange(year, month_number)[1]
+
     for _ in range(quantity):
-        data = copy.deepcopy(base_json)
+        new_json = copy.deepcopy(base_json)
 
-        # _id.$oid
-        if options.get("oid"):
-            data["_id"]["$oid"] = uuid.uuid4().hex[:24]
+        # -------- CREATE AT --------
+        day = random.randint(1, last_day)
+        created_at = datetime(year, month_number, day, 12, 0, 0)
+        new_json["createAt"] = created_at.isoformat()
 
-        # TransactionId
-        if options.get("transaction"):
-            data["TransactionId"] = str(uuid.uuid4())
+        # -------- TOTAL VALUE --------
+        min_val, max_val = value_range
+        new_json["totalValue"] = round(random.uniform(min_val, max_val), 2)
 
-        # ContractNumber (mantém CDP)
-        if options.get("contract"):
-            data["ContractNumber"] = f"CDP{random.randint(1000000000, 9999999999)}"
+        # -------- SELLER UUID --------
+        if seller_uuid_override:
+            new_json["seller_uuid"] = seller_uuid_override
 
-        # TotalValue
-        if options.get("total_value"):
-            min_v, max_v = options["total_value_range"]
-            data["FinancialInfos"]["TotalValue"]["$numberDecimal"] = random_decimal(
-                min_v, max_v
-            )
-
-        # MDRPercent
-        if options.get("mdr"):
-            data["FinancialInfos"]["MDRPercent"]["$numberDecimal"] = str(
-                random.randint(1, 10)
-            )
-
-        # CreatedAt
-        if options.get("created_at"):
-            year = options["year"]
-            month = options["month"]
-            data["CreatedAt"]["$date"] = random_date_in_month(year, month)
-
-        results.append(data)
+        results.append(new_json)
 
     return results
